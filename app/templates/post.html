@@ -8,7 +8,7 @@
                 <a href="{{ url_for("user", nickname=post.author.nickname) }}">
                     {{ post.author.nickname }}
                 </a>
-                says:
+                said {{ momentjs(post.timestamp).fromNow() }}:
             </i>
             <br>{{ post.body }}
         </td>
