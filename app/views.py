@@ -1,10 +1,11 @@
 from datetime import datetime
 
-from app.forms import LoginForm, EditForm
+from app.forms import LoginForm, EditForm, PostForm
 from flask import render_template, flash, redirect, g, url_for, session, request
 from flask.ext.login import login_user, logout_user, current_user, login_required
 from app import app, lm, db, oid
-from app.models import User
+from app.models import User, Post
+from config import POSTS_PER_PAGE
 
 """
     g = global. Is setup by Flask as a place to store and share data during the life of a request.
@@ -14,26 +15,24 @@ __author__ = 'juliana'
 
 
 # URLS
-@app.route('/')
-@app.route('/index')
+@app.route('/', methods=["GET", "POST"])
+@app.route('/index', methods=["GET", "POST"])
+@app.route('/index/<int:page>', methods=["GET", "POST"])
 @login_required
-def index():
+def index(page=1):
     user = g.user
-    posts = [  # fake array of posts
-        {
-            'author': {'nickname': 'John'},
-            'body': 'Beautiful day in Portland!'
-        },
-        {
-            'author': {'nickname': 'Susan'},
-            'body': 'The Avengers movie was so cool!'
-        },
-        {
-            'author': {'nickname': 'Juliana'},
-            'body': 'We will always have Paris.'
-        }
-    ]
-    return render_template('index.html', title='Home', user=user, posts=posts)
+    form = PostForm()
+
+    if form.validate_on_submit():
+        post = Post(body=form.post.data, timestamp=datetime.utcnow(), author=user)
+        db.session.add(post)
+        db.session.commit()
+        flash("Post created!")
+        return redirect(url_for("index"))
+
+    posts = user.followed_posts().paginate(page, POSTS_PER_PAGE, False)
+
+    return render_template('index.html', title='Home', user=user, posts=posts, form=form)
 
 @app.route("/login", methods=['GET', 'POST'])
 @oid.loginhandler
@@ -55,18 +54,16 @@ def logout():
     return redirect(url_for("index"))
 
 @app.route("/user/<nickname>")
+@app.route("/user/<nickname>/<int:page>")
 @login_required
-def user(nickname):
+def user(nickname, page=1):
     user = User.query.filter_by(nickname=nickname).first()
 
     if user == None:
         flash("User %s not found" % nickname)
         return redirect(url_for("index"))
 
-    posts = [
-        {'author': user, 'body': 'Test post #1'},
-        {'author': user, 'body': 'Test post #2'}
-    ]
+    posts = user.posts.paginate(page, POSTS_PER_PAGE, False)
 
     return render_template("user.html", user=user, posts=posts)
 
@@ -131,7 +128,6 @@ def unfollow(nickname):
 
     flash("You are unfollowd %s" % nickname)
     return redirect(url_for("user", nickname=nickname))
-
 
 # Handle stuff
 @app.before_request
