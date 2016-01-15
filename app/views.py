@@ -6,6 +6,7 @@ from flask.ext.login import login_user, logout_user, current_user, login_require
 from app import app, lm, db, oid
 from app.models import User, Post
 from config import POSTS_PER_PAGE
+from app.emails import follower_notification
 
 """
     g = global. Is setup by Flask as a place to store and share data during the life of a request.
@@ -104,6 +105,7 @@ def follow(nickname):
     db.session.commit()
 
     flash("You are now following %s" % nickname)
+    follower_notification(user, g.user)
     return redirect(url_for("user", nickname=nickname))
 
 @app.route("/unfollow/<nickname>")
