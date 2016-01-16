@@ -1,3 +1,4 @@
+from flask.ext.babel import gettext
 from flask.ext.wtf import Form
 from wtforms import StringField, BooleanField, TextAreaField
 from wtforms.validators import DataRequired, Length
@@ -21,6 +22,10 @@ class EditForm(Form):
 
         if self.nickname.data == self.original_nickname:
             return True
+
+        if self.nickname.data != User.make_valid_nickname(self.nickname.data):
+            self.nickname.errors.append(gettext("This nickname has invalid characters. Please try again."))
+            return False
 
         user = User.query.filter_by(nickname=self.nickname.data).first()
         if user != None:

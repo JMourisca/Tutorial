@@ -1,12 +1,12 @@
-from datetime import datetime
-
-from app.forms import LoginForm, EditForm, PostForm
-from flask import render_template, flash, redirect, g, url_for, session, request
-from flask.ext.login import login_user, logout_user, current_user, login_required
-from app import app, lm, db, oid
-from app.models import User, Post
-from config import POSTS_PER_PAGE
+from app import app, lm, db, oid, babel
 from app.emails import follower_notification
+from app.forms import LoginForm, EditForm, PostForm
+from app.models import User, Post
+from config import POSTS_PER_PAGE, LANGUAGES
+from datetime import datetime
+from flask import render_template, flash, redirect, g, url_for, session, request
+from flask.ext.babel import gettext
+from flask.ext.login import login_user, logout_user, current_user, login_required
 
 """
     g = global. Is setup by Flask as a place to store and share data during the life of a request.
@@ -61,7 +61,7 @@ def user(nickname, page=1):
     user = User.query.filter_by(nickname=nickname).first()
 
     if user == None:
-        flash("User %s not found" % nickname)
+        flash(gettext("User %s not found") % nickname)
         return redirect(url_for("index"))
 
     posts = user.posts.paginate(page, POSTS_PER_PAGE, False)
@@ -139,6 +139,7 @@ def before_request():
         g.user.last_seen = datetime.utcnow()
         db.session.add(g.user)
         db.session.commit()
+    g.locale = get_locale()
 
 @app.errorhandler(404)
 def not_found_error(error):
@@ -170,6 +171,7 @@ def after_login(resp):
         if nickname is None or nickname == "":
             nickname = resp.email.split("@")[0]
 
+        nickname = User.make_valid_nickname(nickname)
         nickname = User.make_unique_nickname(nickname)
         user = User(nickname=nickname, email=resp.email)
         db.session.add(user)
@@ -187,3 +189,7 @@ def after_login(resp):
     login_user(user, remember=remember_me)
 
     return redirect(request.args.get("next") or url_for("index"))
+
+@babel.localeselector
+def get_locale():
+    return request.accept_languages.best_match(LANGUAGES.keys())

@@ -12,7 +12,8 @@
     <link rel="stylesheet" href="/static/bower_components/bootstrap/dist/css/bootstrap-theme.min.css">
     <link rel="stylesheet" href="/static/bower_components/font-awesome/css/font-awesome.min.css">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="/static/bower_components/moment/min/moment-with-locales.min.js"></script>
+    <script src="/static/bower_components/moment/locale/{{ g.locale }}.js"></script>
+    <script src="/static/bower_components/moment/min/moment.min.js"></script>
 </head>
 <body>
 <div class="container">
@@ -20,7 +21,7 @@
         Microblog:
         <a href="{{ url_for('index') }}">Home</a>
         {% if g.user.is_authenticated %}
-            | <a href="{{ url_for('user', nickname=g.user.nickname) }}">Your Profile</a>
+            | <a href="{{ url_for('user', nickname=g.user.nickname) }}">{{ _("Your Profile") }}</a>
             | <a href="{{ url_for('logout') }}">Logout</a>
         {% endif %}
     </nav>
