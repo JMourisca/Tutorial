@@ -7,27 +7,37 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2016-01-16 08:40+0100\n"
+"POT-Creation-Date: 2016-01-16 10:24+0100\n"
 "PO-Revision-Date: 2016-01-16 08:46+0100\n"
+"Last-Translator: \n"
 "Language: fr\n"
 "Language-Team: fr <LL@li.org>\n"
-"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"Plural-Forms: nplurals=2; plural=(n > 1)\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.2.0\n"
-"Last-Translator: \n"
-"X-Generator: Poedit 1.8.6\n"
+
+#: app/__init__.py:33
+msgid "Please log in to access this page."
+msgstr ""
 
 #: app/forms.py:27
 msgid "This nickname has invalid characters. Please try again."
-msgstr "Ce surnom a des caractères non valides. S’il vous plaît essayer de nouveau."
+msgstr ""
+"Ce surnom a des caractères non valides. S’il vous plaît essayer de "
+"nouveau."
 
-#: app/views.py:64
+#: app/views.py:70
 #, python-format
 msgid "User %s not found"
 msgstr "L’utilisateur %s n’a pas été trouvée."
 
-#: app/templates/base.html:23
+#: app/templates/base.html:24
 msgid "Your Profile"
 msgstr "Votre profil"
+
+#: app/templates/post.html:18
+msgid "Translate"
+msgstr ""
+

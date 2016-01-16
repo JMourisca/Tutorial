@@ -1,4 +1,4 @@
-<table>
+<table class="table table-condensed table-hover table-striped">
     <tr valign="top">
         <td>
             <img src="{{ post.author.avatar(50) }}">
@@ -10,7 +10,14 @@
                 </a>
                 said {{ momentjs(post.timestamp).fromNow() }}:
             </i>
-            <br>{{ post.body }}
+            <p>
+                {{ post.body }}
+            </p>
+            {% if post.language != None and post.language != "" and post.language != g.locale %}
+                <div>
+                    <a href="#">{{ _("Translate") }}</a>
+                </div>
+            {% endif %}
         </td>
     </tr>
 </table>

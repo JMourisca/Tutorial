@@ -1,12 +1,13 @@
 from app import app, lm, db, oid, babel
 from app.emails import follower_notification
-from app.forms import LoginForm, EditForm, PostForm
-from app.models import User, Post
+from app.forms import LoginForm, EditForm, CategoryForm, SubCategoryForm
+from app.models import User, Post, Flickr, Category, Subcategory
 from config import POSTS_PER_PAGE, LANGUAGES
 from datetime import datetime
-from flask import render_template, flash, redirect, g, url_for, session, request
+from flask import render_template, flash, redirect, g, url_for, session, request, jsonify
 from flask.ext.babel import gettext
 from flask.ext.login import login_user, logout_user, current_user, login_required
+from slugify import slugify
 
 """
     g = global. Is setup by Flask as a place to store and share data during the life of a request.
@@ -16,24 +17,105 @@ __author__ = 'juliana'
 
 
 # URLS
-@app.route('/', methods=["GET", "POST"])
-@app.route('/index', methods=["GET", "POST"])
-@app.route('/index/<int:page>', methods=["GET", "POST"])
+@app.route('/')
+@app.route('/index')
+@app.route('/index/<int:page>')
 @login_required
 def index(page=1):
     user = g.user
-    form = PostForm()
+    flickr = Flickr()
+    photosets = flickr.photosets()
+    total_views = sum([int(i["count_views"]) for i in photosets["photosets"]["photoset"]])
+    total_photos = sum([int(i["photos"]) for i in photosets["photosets"]["photoset"]])
+    form = CategoryForm()
+    form_sub = SubCategoryForm()
 
+    categories = user.categories.all()
+
+    return render_template('index.html',
+                           title='Home',
+                           user=user,
+                           form=form,
+                           form_sub=form_sub,
+                           categories=categories,
+                           photosets=photosets,
+                           total_views=total_views,
+                           total_photos=total_photos)
+
+@app.route("/category", methods=["POST"])
+@login_required
+def category():
+    form = CategoryForm()
     if form.validate_on_submit():
-        post = Post(body=form.post.data, timestamp=datetime.utcnow(), author=user)
-        db.session.add(post)
+        category_slug = slugify(form.category.data)
+        category = Category(category=form.category.data,
+                            timestamp=datetime.utcnow(),
+                            author=g.user,
+                            category_slug=category_slug)
+        db.session.add(category)
         db.session.commit()
-        flash("Post created!")
-        return redirect(url_for("index"))
+        flash("Category created!")
+    else:
+        flash("Nothing happened.")
+    return redirect(url_for("index"))
 
-    posts = user.followed_posts().paginate(page, POSTS_PER_PAGE, False)
+@app.route("/category/<int:category_id>/subcategory", methods=["POST"])
+@login_required
+def subcategory(category_id):
+    form_sub = SubCategoryForm()
+    if form_sub.validate_on_submit():
+        subcategory_slug = slugify(form_sub.subcategory.data)
+        subcategory = Subcategory(subcategory=form_sub.subcategory.data,
+                            timestamp=datetime.utcnow(),
+                            category_id=category_id,
+                            subcategory_slug=subcategory_slug)
+        db.session.add(subcategory)
+        db.session.commit()
+        flash("Subcategory created!")
+    else:
+        flash_errors(form_sub)
 
-    return render_template('index.html', title='Home', user=user, posts=posts, form=form)
+    return redirect(url_for("index"))
+
+@app.route("/subcategory/<int:subcategory_id>", methods=["DELETE"])
+@login_required
+def delete_subcategory(subcategory_id):
+    user = g.user
+    s = Subcategory.query.filter_by(id = subcategory_id).first()
+    deleted = False
+    if s == None:
+        msg = "Subcategory doesn't exist."
+    else:
+        deleted, msg = s.delete(user.id)
+
+    response = {"status": 200, "result": str(deleted), "msg": msg}
+    return jsonify(response)
+
+@app.route("/category/<int:category_id>", methods=["DELETE"])
+@login_required
+def delete_category(category_id):
+    user = g.user
+    s = Category.query.filter_by(id = category_id).first()
+    deleted = False
+    if s == None:
+        msg = "Category doesn't exist."
+    else:
+        deleted, msg = s.delete(user.id)
+
+    response = {"status": 200, "result": str(deleted), "msg": msg}
+    return jsonify(response)
+
+@app.route("/album/<photosetid>")
+@app.route("/album/<photosetid>/<int:page>")
+@login_required
+def album(photosetid, page=1):
+    flickr = Flickr()
+    photos = flickr.photos(photosetid, page)
+    total = int(photos['photoset']["pages"])
+
+    return render_template("flickr_album.html", photos=photos, total=total, page=page, photosetid=photosetid)
+
+
 
 @app.route("/login", methods=['GET', 'POST'])
 @oid.loginhandler
@@ -75,13 +157,15 @@ def edit():
     if form.validate_on_submit():
         g.user.nickname = form.nickname.data
         g.user.about_me = form.about_me.data
+        g.user.name = form.name.data
         db.session.add(g.user)
         db.session.commit()
-        flash("Your changes have been saved.")
+        flash(gettext("Your changes have been saved."), "success")
         return redirect(url_for("edit"))
     else:
         form.nickname.data = g.user.nickname
         form.about_me.data = g.user.about_me
+        form.name.data = g.user.name
 
     return render_template("edit.html", form=form)
 
@@ -193,3 +277,11 @@ def after_login(resp):
 @babel.localeselector
 def get_locale():
     return request.accept_languages.best_match(LANGUAGES.keys())
+
+def flash_errors(form):
+    for field, errors in form.errors.items():
+        for error in errors:
+            flash(u"Error in the %s field - %s" % (
+                getattr(form, field).label.text,
+                error
+            ))

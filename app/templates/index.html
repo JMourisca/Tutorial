@@ -1,38 +1,123 @@
 {% extends "base.html" %}
 {% block content %}
-    <h1>Hello, {{ user.nickname }}</h1>
-    <form action="" method="post" name="post">
-        {{ form.hidden_tag() }}
-        <table>
-            <tr>
-                <td>Say something:</td>
-                <td>{{ form.post(size=30, maxlength=40) }}</td>
-                <td>
-                    {% for error in form.post.errors %}
-                        <span style="color:darkred">[{{ error }}]</span>
-                    {% endfor %}
-                </td>
-            </tr>
-            <tr>
-                <td></td>
-                <td><input type="submit" value="Post!"></td>
-                <td></td>
-            </tr>
-        </table>
-    </form>
+    <h1>Hello, {{ user.name }}</h1>
+    <div class="row">
+        <form action="{{ url_for('category') }}" method="post" name="post">
+            {{ form.hidden_tag() }}
+            <div class="col-lg-3">
+                <div class="input-group">
+                    {{ form.category(maxlength=40, class="form-control", placeholder="New Category") }}
+                <span class="input-group-btn">
+                    <button class="btn btn-default" type="submit">Save</button>
+                </span>
+                </div><!-- /input-group -->
+            </div><!-- /.col-lg-6 -->
+            {% for error in form.category.errors %}
+                <span style="color:darkred">[{{ error }}]</span>
+            {% endfor %}
+        </form>
+    </div>
+
     <div>
-        {% for post in posts.items %}
-            {% include "post.html" %}
-        {% endfor %}
-        {% if posts.has_prev %}
-            <a href="{{ url_for('index', page=posts.prev_num) }}"><< Newer posts</a>
-        {% else %}
-            << Newer posts
-        {% endif %} |
-        {% if posts.has_next %}
-            <a href="{{ url_for('index', page=posts.next_num) }}">Older posts >></a>
-        {% else %}
-            Older posts >>
-        {% endif %}
+        <table class="table table-hover table-condensed">
+            <thead>
+            <tr>
+                <th>Category</th>
+                <th>Subcategories</th>
+                <th style="width: 220px"></th>
+                <th style="width: 30px"></th>
+            </tr>
+            </thead>
+            <tbody ng-controller="CategoryController as cat">
+            {% for category in categories %}
+                <tr>
+                    <td>{{ category.category }} ({{ category.category_slug }})</td>
+                    <td>
+                        {% for sub in category.subcategories %}
+                            {{ sub.subcategory }} ({{ sub.subcategory_slug }})
+                            <a href="#" class="text-danger" ng-click="cat.delete('subcategory', {{ sub.id }})">
+                                <i class="fa fa-fw fa-times"></i>
+                            </a>
+                            <br>
+                        {% endfor %}
+                    </td>
+                    <td>
+                        <form action="{{ url_for('subcategory', category_id=category.id) }}" method="post"
+                              name="subcategory">
+                            {{ form_sub.hidden_tag() }}
+                            <div>
+                                <div class="input-group input-group-sm">
+                                    {{ form_sub.subcategory(maxlength=40, class="form-control", placeholder="New Subcategory") }}
+                                    <span class="input-group-btn">
+                                        <button class="btn btn-default" type="submit">Save</button>
+                                    </span>
+                                </div><!-- /input-group -->
+                            </div><!-- /.col-lg-6 -->
+                        </form>
+                    </td>
+                    <td>
+                        <a href="#" class="text-danger" ng-click="cat.delete('category', {{ category.id }})">
+                            <i class="fa fa-fw fa-times"></i>
+                        </a>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {#        {% for post in posts.items %}#}
+        {#            {% include "post.html" %}#}
+        {#        {% endfor %}#}
+        {#        {% if posts.has_prev %}#}
+        {#            <a href="{{ url_for('index', page=posts.prev_num) }}"><< Newer posts</a>#}
+        {#        {% else %}#}
+        {#            << Newer posts#}
+        {#        {% endif %} |#}
+        {#        {% if posts.has_next %}#}
+        {#            <a href="{{ url_for('index', page=posts.next_num) }}">Older posts >></a>#}
+        {#        {% else %}#}
+        {#            Older posts >>#}
+        {#        {% endif %}#}
+
+        <h2>Flickr Albuns</h2>
+        <table class="table table-hover table-condensed">
+            <thead>
+            <tr>
+                <th>Title</th>
+                <th>Nr. of Photos</th>
+                <th>Views count</th>
+                <th>Created</th>
+                <th>Modified</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for set in photosets["photosets"]["photoset"] %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('album', photosetid=set["id"]) }}">
+                            {{ set["title"]["_content"] }}
+                        </a>
+                    </td>
+                    <td>{{ set["photos"] }}</td>
+                    <td>{{ set["count_views"] }}</td>
+                    <td>{{ set["date_create"] }}</td>
+                    <td>{{ set["date_update"] }}</td>
+                </tr>
+            {% endfor %}
+
+            </tbody>
+            <tfoot>
+            <tr>
+                <td>Total:</td>
+                <td>
+                    {{ total_photos }}
+                </td>
+                <td>
+                    {{ total_views }}
+                </td>
+                <td colspan="2"></td>
+            </tr>
+            </tfoot>
+        </table>
+
     </div>
 {% endblock %}

@@ -2,6 +2,8 @@ import re
 from hashlib import md5
 
 from app import db
+from config import FLICKR_MY_ID, FLICKR_API_SECRET, FLICKR_API_KEY, PHOTOS_PER_PAGE
+import flickrapi
 
 """
 This is an auxiliary table for a many-to-many relationship, that's why it doesn't belong to a class.
@@ -13,6 +15,7 @@ followers = db.Table("followers",
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100))
     nickname = db.Column(db.String(64), index=True, unique=True)
     email = db.Column(db.String(120), index=True, unique=True)
     """
@@ -23,6 +26,7 @@ class User(db.Model):
         User instance that created the post.
     """
     posts = db.relationship("Post", backref="author", lazy="dynamic")
+    categories = db.relationship("Category", backref="author", lazy="dynamic")
     about_me = db.Column(db.String(140))
     last_seen = db.Column(db.DateTime)
     """
@@ -106,13 +110,76 @@ class User(db.Model):
         ).filter(followers.c.follower_id == self.id).order_by(Post.timestamp.desc())
 
     def __repr__(self):
-        return "<User %r>" % (self.nickname)
+        name = self.name
+        if self.name == None:
+            name = self.nickname
+
+        return "<User %r>" % (name)
 
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     body = db.Column(db.String(140))
     timestamp = db.Column(db.DateTime)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    language = db.Column(db.String(5))
 
     def __repr__(self):
         return "<Post %r>" % (self.body)
+
+class Category(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    category = db.Column(db.String(100))
+    category_slug = db.Column(db.String(100))
+    timestamp = db.Column(db.DateTime)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    subcategories = db.relationship("Subcategory", backref="category", lazy="dynamic")
+
+    def delete(self, id):
+        if self.author.id != id or self.subcategories.count() > 0:
+            if self.author.id != id:
+                msg = "Cannot delete another user's information."
+
+            if self.subcategories.count() > 0:
+                msg = "This Category is not empty."
+
+            return False, msg
+
+        db.session.delete(self)
+        db.session.commit()
+        return True, "Deleted"
+
+    def __repr__(self):
+        return "<Category %s>" % self.category
+
+class Subcategory(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    subcategory = db.Column(db.String(100))
+    subcategory_slug = db.Column(db.String(100))
+    timestamp = db.Column(db.DateTime)
+    category_id = db.Column(db.Integer, db.ForeignKey("category.id"))
+
+    def delete(self, id):
+        if self.category.author.id != id:
+            return False, "Cannot delete another user's information."
+        db.session.delete(self)
+        db.session.commit()
+        return True, "Deleted"
+
+    def __repr__(self):
+        return "<Subcategory %s>" % self.subcategory
+
+class Flickr():
+    flickr = flickrapi.FlickrAPI(FLICKR_API_KEY, FLICKR_API_SECRET, format="parsed-json")
+
+    def photosets(self):
+        return self.flickr.photosets.getList(user_id=FLICKR_MY_ID, per_page=5, page=1)
+
+    def photos(self, photosetid, page=1, per_page=PHOTOS_PER_PAGE):
+        return self.flickr.photosets.getPhotos(user_id=FLICKR_MY_ID,
+                                               photoset_id=photosetid,
+                                               per_page=per_page,
+                                               page=page,
+                                               extras="url_t,url_sq,url_s,url_m,url_o,views,path_alias,tags")
+
+    def __repr__(self):
+        return "<Flickr %r>" % ("Nurdagniriel")

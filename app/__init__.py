@@ -1,4 +1,5 @@
 import os
+import datetime
 from flask import Flask
 from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.login import LoginManager
@@ -18,9 +19,15 @@ class CustomJSONEncoder(JSONEncoder):
             return str(obj)  # python 3
         return super(CustomJSONEncoder, self).default(obj)
 
+def from_unixtimestamp(timestamp):
+    return datetime.datetime.fromtimestamp(
+        int(timestamp)
+    ).strftime('%Y-%m-%dT%H:%M:%S')
+
 app = Flask(__name__)
 app.config.from_object('config')
 app.jinja_env.globals["momentjs"] = MomentJs
+app.jinja_env.globals["from_unixtimestamp"] = from_unixtimestamp
 app.json_encoder = CustomJSONEncoder
 
 babel = Babel(app)
