@@ -43,3 +43,6 @@ class CategoryForm(Form):
 
 class SubCategoryForm(Form):
     subcategory = StringField("subcategory", validators=[DataRequired()])
+
+class SearchAlbum(Form):
+    query = StringField("query", validators=[DataRequired()])

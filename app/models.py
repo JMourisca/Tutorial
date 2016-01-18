@@ -1,9 +1,6 @@
 import re
 from hashlib import md5
-
 from app import db
-from config import FLICKR_MY_ID, FLICKR_API_SECRET, FLICKR_API_KEY, PHOTOS_PER_PAGE
-import flickrapi
 
 """
 This is an auxiliary table for a many-to-many relationship, that's why it doesn't belong to a class.
@@ -12,6 +9,11 @@ followers = db.Table("followers",
                      db.Column("follower_id", db.Integer, db.ForeignKey("user.id")),
                      db.Column("followed_id", db.Integer, db.ForeignKey("user.id"))
             )
+
+images = db.Table("images_subcat",
+                  db.Column("subcategory_id", db.Integer, db.ForeignKey("subcategory.id")),
+                  db.Column("image_id", db.Integer, db.ForeignKey("image.id"))
+                  )
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -168,18 +170,9 @@ class Subcategory(db.Model):
     def __repr__(self):
         return "<Subcategory %s>" % self.subcategory
 
-class Flickr():
-    flickr = flickrapi.FlickrAPI(FLICKR_API_KEY, FLICKR_API_SECRET, format="parsed-json")
+class ImageCount(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    count_view = db.Column(db.Integer)
+    image_id = db.Column(db.Integer, db.ForeignKey("image.id"))
+    timestamp = db.Column(db.DateTime)
 
-    def photosets(self):
-        return self.flickr.photosets.getList(user_id=FLICKR_MY_ID, per_page=5, page=1)
-
-    def photos(self, photosetid, page=1, per_page=PHOTOS_PER_PAGE):
-        return self.flickr.photosets.getPhotos(user_id=FLICKR_MY_ID,
-                                               photoset_id=photosetid,
-                                               per_page=per_page,
-                                               page=page,
-                                               extras="url_t,url_sq,url_s,url_m,url_o,views,path_alias,tags")
-
-    def __repr__(self):
-        return "<Flickr %r>" % ("Nurdagniriel")

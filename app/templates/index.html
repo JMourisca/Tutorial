@@ -35,9 +35,8 @@
                     <td>
                         {% for sub in category.subcategories %}
                             {{ sub.subcategory }} ({{ sub.subcategory_slug }})
-                            <a href="#" class="text-danger" ng-click="cat.delete('subcategory', {{ sub.id }})">
-                                <i class="fa fa-fw fa-times"></i>
-                            </a>
+                            <a href="{{ url_for("add_photo", subcategory_id=sub.id) }}" class="text-success"><i class="fa fa-fw fa-photo"></i></a>
+                            <a href="#" class="text-danger" ng-click="cat.delete('subcategory', {{ sub.id }})"><i class="fa fa-fw fa-times"></i></a>
                             <br>
                         {% endfor %}
                     </td>
@@ -56,27 +55,12 @@
                         </form>
                     </td>
                     <td>
-                        <a href="#" class="text-danger" ng-click="cat.delete('category', {{ category.id }})">
-                            <i class="fa fa-fw fa-times"></i>
-                        </a>
+                        <a href="#" class="text-danger" ng-click="cat.delete('category', {{ category.id }})"><i class="fa fa-fw fa-times"></i></a>
                     </td>
                 </tr>
             {% endfor %}
             </tbody>
         </table>
-        {#        {% for post in posts.items %}#}
-        {#            {% include "post.html" %}#}
-        {#        {% endfor %}#}
-        {#        {% if posts.has_prev %}#}
-        {#            <a href="{{ url_for('index', page=posts.prev_num) }}"><< Newer posts</a>#}
-        {#        {% else %}#}
-        {#            << Newer posts#}
-        {#        {% endif %} |#}
-        {#        {% if posts.has_next %}#}
-        {#            <a href="{{ url_for('index', page=posts.next_num) }}">Older posts >></a>#}
-        {#        {% else %}#}
-        {#            Older posts >>#}
-        {#        {% endif %}#}
 
         <h2>Flickr Albuns</h2>
         <table class="table table-hover table-condensed">
@@ -90,17 +74,17 @@
             </tr>
             </thead>
             <tbody>
-            {% for set in photosets["photosets"]["photoset"] %}
+            {% for set in photosets.items %}
                 <tr>
                     <td>
                         <a href="{{ url_for('album', photosetid=set["id"]) }}">
-                            {{ set["title"]["_content"] }}
+                            {{ set.title }}
                         </a>
                     </td>
-                    <td>{{ set["photos"] }}</td>
-                    <td>{{ set["count_views"] }}</td>
-                    <td>{{ set["date_create"] }}</td>
-                    <td>{{ set["date_update"] }}</td>
+                    <td>{{ set.photos }}</td>
+                    <td>{{ set.count_views }}</td>
+                    <td>{{ set.date_create }}</td>
+                    <td>{{ set.date_update }}</td>
                 </tr>
             {% endfor %}
 
@@ -118,6 +102,9 @@
             </tr>
             </tfoot>
         </table>
+
+        {% import "_pagination.html" as pagination %}
+        {{ pagination.paginate(photosets, page, total) }}
 
     </div>
 {% endblock %}

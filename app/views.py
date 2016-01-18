@@ -1,12 +1,17 @@
+import decimal
+import json
+
 from app import app, lm, db, oid, babel
 from app.emails import follower_notification
-from app.forms import LoginForm, EditForm, CategoryForm, SubCategoryForm
-from app.models import User, Post, Flickr, Category, Subcategory
-from config import POSTS_PER_PAGE, LANGUAGES
+from app.forms import LoginForm, EditForm, CategoryForm, SubCategoryForm, SearchAlbum
+from app.models import User, Category, Subcategory
+from app.flickr_models import Photoset, Photo
+from config import PHOTOSETS_PER_PAGE, LANGUAGES
 from datetime import datetime
-from flask import render_template, flash, redirect, g, url_for, session, request, jsonify
+from flask import render_template, flash, redirect, g, url_for, session, request, jsonify, Response
 from flask.ext.babel import gettext
 from flask.ext.login import login_user, logout_user, current_user, login_required
+from flask_triangle import triangle
 from slugify import slugify
 
 """
@@ -23,13 +28,11 @@ __author__ = 'juliana'
 @login_required
 def index(page=1):
     user = g.user
-    flickr = Flickr()
-    photosets = flickr.photosets()
-    total_views = sum([int(i["count_views"]) for i in photosets["photosets"]["photoset"]])
-    total_photos = sum([int(i["photos"]) for i in photosets["photosets"]["photoset"]])
+    photosets = Photoset.query.order_by(Photoset.date_create.desc()).paginate(page, PHOTOSETS_PER_PAGE, False)
+    total_views = sum([int(i.count_views) for i in photosets.items])
+    total_photos = sum([int(i.photos) for i in photosets.items])
     form = CategoryForm()
     form_sub = SubCategoryForm()
-
     categories = user.categories.all()
 
     return render_template('index.html',
@@ -40,7 +43,9 @@ def index(page=1):
                            categories=categories,
                            photosets=photosets,
                            total_views=total_views,
-                           total_photos=total_photos)
+                           total_photos=total_photos,
+                           page=page,
+                           total=10)
 
 @app.route("/category", methods=["POST"])
 @login_required
@@ -77,6 +82,23 @@ def subcategory(category_id):
 
     return redirect(url_for("index"))
 
+@app.route("/add_photo/<int:subcategory_id>", methods=["GET", "POST"])
+@login_required
+def add_photo(subcategory_id):
+    subcategory = Subcategory.query.filter_by(id=subcategory_id).first()
+    category = subcategory.category
+    form = SearchAlbum()
+    albums = None
+    if form.validate_on_submit():
+        query = form.query.data
+        albums = Photoset.query.filter(Photoset.title.like("%"+query+"%")).all()
+
+    return render_template("add_photo.html",
+                           subcategory=subcategory,
+                           category=category,
+                           form=form,
+                           albums=albums)
+
 @app.route("/subcategory/<int:subcategory_id>", methods=["DELETE"])
 @login_required
 def delete_subcategory(subcategory_id):
@@ -109,13 +131,17 @@ def delete_category(category_id):
 @app.route("/album/<photosetid>/<int:page>")
 @login_required
 def album(photosetid, page=1):
-    flickr = Flickr()
-    photos = flickr.photos(photosetid, page)
-    total = int(photos['photoset']["pages"])
+    photos = Photo.query.filter_by(photoset_id=photosetid).paginate(page, PHOTOSETS_PER_PAGE, False)
+    total = int(photos.total/PHOTOSETS_PER_PAGE)
 
     return render_template("flickr_album.html", photos=photos, total=total, page=page, photosetid=photosetid)
 
-
+def alchemyencoder(obj):
+    """JSON encoder function for SQLAlchemy special classes."""
+    if isinstance(obj, datetime.date):
+        return obj.isoformat()
+    elif isinstance(obj, decimal.Decimal):
+        return float(obj)
 
 @app.route("/login", methods=['GET', 'POST'])
 @oid.loginhandler

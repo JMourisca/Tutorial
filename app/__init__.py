@@ -1,6 +1,6 @@
 import os
 import datetime
-from flask import Flask
+from flask import Flask, Blueprint
 from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.login import LoginManager
 from flask.ext.openid import OpenID
@@ -9,6 +9,7 @@ from flask.json import JSONEncoder
 from config import basedir
 from flask.ext.mail import Mail
 from .momentjs import MomentJs
+from flask_triangle import Triangle
 
 class CustomJSONEncoder(JSONEncoder):
     """This class adds support for lazy translation texts to Flask's
@@ -19,16 +20,22 @@ class CustomJSONEncoder(JSONEncoder):
             return str(obj)  # python 3
         return super(CustomJSONEncoder, self).default(obj)
 
-def from_unixtimestamp(timestamp):
+def from_timestamp(timestamp, format):
     return datetime.datetime.fromtimestamp(
-        int(timestamp)
-    ).strftime('%Y-%m-%dT%H:%M:%S')
+        float(timestamp)
+    ).strftime(format)
 
 app = Flask(__name__)
 app.config.from_object('config')
 app.jinja_env.globals["momentjs"] = MomentJs
-app.jinja_env.globals["from_unixtimestamp"] = from_unixtimestamp
+app.jinja_env.globals["from_timestamp"] = from_timestamp
+app.jinja_env.add_extension('jinja2.ext.do')
 app.json_encoder = CustomJSONEncoder
+
+bp = Blueprint("api", __name__)
+app.register_blueprint(bp, url_prefix="/api/")
+
+Triangle(app)
 
 babel = Babel(app)
 
@@ -54,4 +61,5 @@ if not app.debug:
     app.logger.addHandler(file_handler)
     app.logger.info('microblog startup')
 
-from app import views, models
+from app import views, models, flickr_models
+from app.api import views

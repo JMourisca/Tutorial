@@ -1,0 +1,51 @@
+{% macro paginate(paginator, page, total) %}
+
+    {% set view_args = request.view_args %}
+    {% if "page" in view_args %}
+    {% do view_args.pop('page') %}
+    {% endif %}
+    <nav>
+        <ul class="pagination">
+            {% if paginator.has_prev and paginator.prev_num != 1 %}
+                <li>
+                    <a href="{{ url_for(request.endpoint, page=paginator.prev_num, **view_args) }}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+            {% else %}
+                <li class="disabled">
+                    <a href="" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+            {% endif %}
+
+            {% for p in range(1, total) %}
+                {% if p == page %}
+                <li class="active">
+                    <a href="{{ url_for(request.endpoint, page=p, **view_args) }}">{{ p }}</a>
+                </li>
+                {% else %}
+                <li>
+                    <a href="{{ url_for(request.endpoint, page=p, **view_args) }}">{{ p }}</a>
+                </li>
+                {% endif %}
+
+            {% endfor %}
+
+            {% if paginator.has_next and paginator.next_num != total %}
+                <li>
+                    <a href="{{ url_for(request.endpoint, page=paginator.next_num, **view_args) }}" aria-label="Previous">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+            {% else %}
+                <li class="disabled">
+                    <a href="" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+{% endmacro %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+    <h1>Add Photo to {{ category.category }} <i class="fa fa-fw fa-caret-right"></i> {{ subcategory.subcategory }}</h1>
+    <div class="row">
+        <div class="col-lg-3">
+            <form action="" method="post">
+                <div class="input-group input-group-sm">
+                    {{ form.hidden_tag() }}
+                    {{ form.query(class="form-control", placeholder="Search Albums") }}
+                    <span class="input-group-btn">
+                        <button class="btn btn-default" type="submit"><i class="fa fa-fw fa-search"></i></button>
+                    </span>
+                </div><!-- /input-group -->
+            </form>
+        </div>
+    </div>
+    {% if albums != None %}
+    <div class="row" ng-controller="PhotosController as photo">
+        <div class="col-lg-3">
+            <h3>Albums</h3>
+            <table class="table table-condensed">
+                <tbody>
+                {% for album in albums %}
+                    <tr>
+                        <td>
+                            <a href="" ng-click="photo.getPhotos('{{ album.id }}')">
+                                {{ album.title }}
+                            </a>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="col-lg-9">
+            <div class="col-lg-2" ng-repeat="pic in photo.photos" style="margin-bottom: 5px">
+                <i class="fa fa-fw fa-check-circle text-success img_active_thumbnail" ng-if="pic.active"></i>
+                <img ng-src="{{ pic.url_sq | angular }}" class="thumbnail" ng-class="{'active_thumbnail':pic.active}"
+                     ng-click="photo.select(pic)" style="margin-bottom: 5px;cursor: pointer">
+                <a href="#" class="small">View</a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+{% endblock %}
